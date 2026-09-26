@@ -642,6 +642,42 @@ hook.Add("PopulateToolMenu", "TIV_PopulateFullSettingsMenu", function()
     end)
 
     -- ------------------------------------------------------------------------
+    -- 7b. PAC3 EVENT MAPPING TAB
+    -- ------------------------------------------------------------------------
+    spawnmenu.AddToolMenuOption("Utilities", "TIV", "TIV_Menu_PAC3", "PAC3 Event Mapping", "", "", function(panel)
+        panel:ClearControls()
+
+        local title = panel:Help("PAC3 Event Mapping")
+        title:SetFont("DermaDefaultBold")
+        panel:Help("Open the PAC3 Mapping menu to scan your worn PAC3 outfits, preview each command event in the 3D viewer, and bind events to TIV deploy stages. Bindings are saved per-outfit so multiple PAC3 creations can use their own event names.")
+
+        local openBtn = vgui.Create("DButton", panel)
+        openBtn:SetText("OPEN PAC3 MAPPING MENU")
+        openBtn:SetTall(36)
+        openBtn:SetTextColor(Color(255, 255, 255))
+        openBtn.Paint = function(self, w, h)
+            draw.RoundedBox(6, 0, 0, w, h, self:IsHovered() and THEME.accent or THEME.accentDark)
+        end
+        openBtn.DoClick = function()
+            RunConsoleCommand("tiv_menu")
+            -- The PAC3 tab is added to the master console below. We can't
+            -- switch tabs from here easily, but opening the console at least
+            -- surfaces the settings.
+        end
+        panel:AddItem(openBtn)
+
+        if TIV.PAC3 and TIV.PAC3.BuildMappingPanel then
+            local wrapper = vgui.Create("DPanel", panel)
+            wrapper:SetTall(640)
+            wrapper.Paint = function() end
+            local mapPnl = TIV.PAC3.BuildMappingPanel(wrapper)
+            mapPnl:SetParent(wrapper)
+            mapPnl:Dock(FILL)
+            panel:AddItem(wrapper)
+        end
+    end)
+
+    -- ------------------------------------------------------------------------
     -- 8. CHEATS & DEV SANDBOX TAB
     -- ------------------------------------------------------------------------
     spawnmenu.AddToolMenuOption("Utilities", "TIV", "TIV_Menu_Cheats", "Cheats & Dev Sandbox", "", "", function(panel)
@@ -1647,6 +1683,56 @@ STEP 4: RETRACTION & RELOCATION
     AddSidebarTab("Storm & Wind", BuildWindTab)
     AddSidebarTab("Cockpit HUD", BuildHUDTab)
     AddSidebarTab("Wiremod & E2", BuildWiremodTab)
+    AddSidebarTab("PAC3 Mapping", function(parent)
+        -- Resolve at click-time so late loads / autorefresh still work.
+        if TIV.PAC3 and TIV.PAC3.BuildMappingPanel then
+            return TIV.PAC3.BuildMappingPanel(parent)
+        end
+        local pnl = vgui.Create("DPanel", parent)
+        pnl:Dock(FILL)
+        pnl.Paint = function(s, w, h)
+            draw.RoundedBox(0, 0, 0, w, h, Color(20, 22, 26))
+        end
+        local lbl = vgui.Create("DLabel", pnl)
+        lbl:Dock(TOP)
+        lbl:DockMargin(16, 16, 16, 8)
+        lbl:SetFont("DermaLarge")
+        lbl:SetTextColor(Color(230, 235, 240))
+        lbl:SetText("PAC3 module not loaded")
+        lbl:SizeToContents()
+
+        local msg = vgui.Create("DLabel", pnl)
+        msg:Dock(TOP)
+        msg:DockMargin(16, 0, 16, 16)
+        msg:SetWrap(true)
+        msg:SetAutoStretchVertical(true)
+        msg:SetTextColor(Color(180, 190, 200))
+        msg:SetText(
+            "This usually means a Lua error prevented tiv/pac3/cl_pac3.lua from loading. " ..
+            "Check your console for an error starting with '[TIV]' or 'lua/' and report it. " ..
+            "If you just fixed an error you can retry this tab without restarting: open the " ..
+            "console and run 'lua_openscript_cl cl_pac3.lua' isn't possible from outside " ..
+            "the addon folder — instead type 'tiv_menu' to reopen and this tab will re-check.")
+        msg:SizeToContents()
+
+        local retry = vgui.Create("DButton", pnl)
+        retry:Dock(TOP)
+        retry:DockMargin(16, 0, 16, 0)
+        retry:SetTall(30)
+        retry:SetText("Retry Load")
+        retry.DoClick = function()
+            -- Re-include the client file if it exists on disk.
+            local ok, err = pcall(include, "tiv/pac3/cl_pac3.lua")
+            if not ok then
+                msg:SetText("Load failed:\n" .. tostring(err))
+                msg:SizeToContents()
+            else
+                RunConsoleCommand("tiv_menu") -- re-open to pick up the freshly built panel
+            end
+        end
+
+        return pnl
+    end)
     AddSidebarTab("Field Manual", BuildManualTab)
     AddSidebarTab("Cheats / Sandbox", BuildCheatsTab)
 

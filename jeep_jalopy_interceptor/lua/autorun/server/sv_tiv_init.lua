@@ -14,6 +14,12 @@ AddCSLuaFile("tiv/progression/sh_progression.lua")
 include("tiv/customization/sh_custom_config.lua")
 AddCSLuaFile("tiv/customization/sh_custom_config.lua")
 
+-- PAC3 integration shared + server
+include("tiv/pac3/sh_pac3.lua")
+AddCSLuaFile("tiv/pac3/sh_pac3.lua")
+include("tiv/pac3/sv_pac3.lua")
+AddCSLuaFile("tiv/pac3/cl_pac3.lua")
+
 -- Progression & Customization server
 include("tiv/progression/sv_progression.lua")
 include("tiv/customization/sv_custom_components.lua")
